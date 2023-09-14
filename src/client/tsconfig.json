@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "strict": true,
+    "target": "es5",
+    "downlevelIteration": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
+  },
+
+  "include": ["**/*.ts"]
+}
