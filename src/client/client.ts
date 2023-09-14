@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import * as CANNON from 'cannon-es';
+import * as CANNON from 'cannon';
 const mapData = [
   {
     imgNo: 1,
