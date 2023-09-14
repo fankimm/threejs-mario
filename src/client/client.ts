@@ -4272,8 +4272,7 @@ const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.setSize(window.innerWidth, window.innerWidth);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-
-const jumpLimit = 0.78;
+const jumpLimit = 0.5;
 const jumpAmount = 0.009;
 const tileSize = 0.05;
 const planeTile = new THREE.PlaneGeometry(tileSize, tileSize);
