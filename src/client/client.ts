@@ -4226,7 +4226,7 @@ const mapData = [
 //       }
 //     }
 //   }
-
+//   console.log('🚀 ~ file: client.ts:4216 ~ tmpMapData:', tmpMapData);
 //   // mapCanvas.remove();
 //   comp.forEach((t, idx) => {
 //     if (t?.imageData) {
@@ -4239,18 +4239,19 @@ type State = 'JUMPING' | 'FALLING' | 'IDLE' | 'RUNNING';
 type Direction = 'LEFT' | 'RIGHT';
 const scene = new THREE.Scene();
 // 기즈모 헬퍼
-// scene.add(new THREE.AxesHelper(5));
+scene.add(new THREE.AxesHelper(5));
+const bgm = new Audio('bgm.mp3');
 
 // const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 10000);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
 
 // 카메라 초기 위치
-// camera.position.z = 2;
-camera.position.y = 1;
+camera.position.y = 2;
+camera.position.z = 2;
+camera.lookAt(19, 2, 0);
+// camera.position.y = 1;
 // camera.zoom = 0.5;
 
-// const world = new CANNON.World();
-// world.gravity.set(0, -9.82, 0);
 // world.broadphase = new CANNON.NaiveBroadphase();
 // (world.solver as CANNON.GSSolver).iterations = 10;
 // world.allowSleep = true;
@@ -4273,72 +4274,11 @@ renderer.setSize(window.innerWidth, window.innerWidth);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 const jumpLimit = 0.5;
-const jumpAmount = 0.009;
+const jumpAmount = 0.01;
 const tileSize = 0.05;
+const cubeTile = new THREE.BoxGeometry(tileSize, tileSize, tileSize);
 const planeTile = new THREE.PlaneGeometry(tileSize, tileSize);
-
-const blockTexture = new THREE.TextureLoader().load('img/sprites.png');
-blockTexture.offset.x = 0.1;
-blockTexture.offset.y = 0.9;
-blockTexture.repeat.x = 0.1;
-blockTexture.repeat.y = 0.1;
-blockTexture.minFilter = THREE.NearestFilter;
-blockTexture.magFilter = THREE.NearestFilter;
-
-const groundTexture = new THREE.TextureLoader().load('img/sprites.png');
-groundTexture.offset.x = 0;
-groundTexture.offset.y = 0.9;
-groundTexture.repeat.x = 0.1;
-groundTexture.repeat.y = 0.1;
-
-groundTexture.minFilter = THREE.NearestFilter;
-groundTexture.magFilter = THREE.NearestFilter;
-
-const questionBoxTexture = new THREE.TextureLoader().load('img/sprites.png');
-questionBoxTexture.offset.x = 0;
-questionBoxTexture.offset.y = 0;
-questionBoxTexture.repeat.x = 0.1;
-questionBoxTexture.repeat.y = 0.1;
-questionBoxTexture.minFilter = THREE.NearestFilter;
-questionBoxTexture.magFilter = THREE.NearestFilter;
-
-// const cylinderTexture = new THREE.TextureLoader().load('img/sprites.png');
-// cylinderTexture.minFilter = THREE.NearestFilter;
-// cylinderTexture.magFilter = THREE.NearestFilter;
-// cylinderTexture.offset.x = 0;
-// cylinderTexture.offset.y = 0.1;
-// cylinderTexture.repeat.x = 0.4;
-// cylinderTexture.repeat.y = 0.2;
-
-// const cylinderGeometry = new THREE.CylinderBufferGeometry(
-//   tileSize,
-//   tileSize,
-//   tileSize * 2,
-//   8
-// ); // 반지름, 반지름, 높이, 세그먼트 수
-// const top = new THREE.MeshBasicMaterial({
-//   color: '#000000',
-// }); // 머티리얼 설정
-// const sideMatarial = new THREE.MeshBasicMaterial({
-//   map: cylinderTexture,
-// });
-// const cylinderMesh = new THREE.Mesh(cylinderGeometry, [sideMatarial, top, top]); // Mesh 생성
-// cylinderMesh.position.x = 9.5 * tileSize;
-// cylinderMesh.position.y = 11.5 * tileSize;
-// scene.add(cylinderMesh);
-
-const blockMaterial = new THREE.MeshBasicMaterial({
-  map: blockTexture,
-  transparent: true,
-});
-const groundMaterial = new THREE.MeshBasicMaterial({
-  map: groundTexture,
-  transparent: true,
-});
-const questionBoxMaterial = new THREE.MeshBasicMaterial({
-  map: questionBoxTexture,
-  // transparent: true,
-});
+const mapOffset = { x: -20, y: 20, z: 0 };
 
 const marioTexture = new THREE.TextureLoader().load('img/characters.png');
 marioTexture.minFilter = THREE.NearestFilter;
@@ -4354,22 +4294,91 @@ const marioMaterial = new THREE.MeshBasicMaterial({
   transparent: true,
   side: THREE.DoubleSide,
 });
+
 const marioMesh = new THREE.Mesh(planeTile, marioMaterial);
-// controls.target = new THREE.Vector3(
-//   marioMesh.position.x,
-//   marioMesh.position.y - 2,
-//   0
+// const marioMesh = new THREE.Mesh(planeTile, marioMaterial);
+const x = -10;
+const y = 10;
+const z = 0;
+
+marioMesh.position.x = x * tileSize;
+marioMesh.position.y = y * tileSize;
+marioMesh.position.z = z * tileSize;
+scene.add(marioMesh);
+const world = new CANNON.World();
+world.gravity.set(0, -0.982, 0);
+const defaultMaterial = new CANNON.Material('default');
+
+const defaultContactMaterial = new CANNON.ContactMaterial(
+  defaultMaterial,
+  defaultMaterial,
+  {
+    friction: 5.51,
+    restitution: 0.05,
+  }
+);
+world.addContactMaterial(defaultContactMaterial);
+world.defaultContactMaterial = defaultContactMaterial;
+const marioShape = new CANNON.Sphere(tileSize / 4);
+const marioBody = new CANNON.Body({
+  mass: 2,
+  shape: marioShape,
+});
+// marioBody.position.set(-10, 20, 0);
+// marioMesh.position.copy(
+//   new THREE.Vector3(
+//     marioBody.position.x,
+//     marioBody.position.y,
+//     marioBody.position.z
+//   )
 // );
+// marioMesh.position.x = marioBody.position.x;
+// marioMesh.position.y = marioBody.position.y;
+// marioMesh.position.z = marioBody.position.z;
+marioBody.position.x = marioMesh.position.x;
+marioBody.position.y = marioMesh.position.y;
+marioBody.position.z = marioMesh.position.z;
+// marioBody.position.copy(new THREE.Vector3(marioMesh.position.x))
+world.addBody(marioBody);
+
+const clock = new THREE.Clock();
+let oldElapsedTime = 0;
 let vel = {
   x: 0,
   y: 0,
 };
+const tick = (target: THREE.Mesh) => {
+  const elapsedTime = clock.getElapsedTime();
+  const deltaTime = elapsedTime - oldElapsedTime;
+  oldElapsedTime = elapsedTime;
+  world.step(1 / 60, deltaTime, 3);
+  physicsRenderList.forEach((l) => {
+    l.tile.position.copy(
+      new THREE.Vector3(l.body.position.x, l.body.position.y, l.body.position.z)
+    );
+    // l.tile.position.x = l.body.position.x;
+    // l.tile.position.y = l.body.position.y;
+    // l.tile.position.z = l.body.position.z;
+  });
+  target.position.copy(
+    new THREE.Vector3(
+      marioBody.position.x,
+      marioBody.position.y,
+      marioBody.position.z
+    )
+  );
+  // target.position.x = marioBody.position.x;
+  // target.position.y = marioBody.position.y;
+  // target.position.z = marioBody.position.z;
+};
+
 let state: State = 'IDLE';
 let direction: Direction = 'RIGHT';
-const velocityAmount = 0.005;
+const velocityAmount = 0.001;
 
 const keysPressed: { [key: string]: boolean } = {};
 document.addEventListener('keydown', (e) => {
+  bgm.play();
   keysPressed[e.key] = true;
   if (e.key === 'ArrowRight') {
     state = 'RUNNING';
@@ -4379,9 +4388,13 @@ document.addEventListener('keydown', (e) => {
     state = 'RUNNING';
     direction = 'LEFT';
     vel.x = -velocityAmount;
-  } else if (e.code === 'Space' && state !== 'JUMPING') {
+  } else if (e.code === 'Space') {
     state = 'JUMPING';
     vel.y = jumpAmount;
+    // marioBody.applyImpulse(
+    //   new CANNON.Vec3(0, -0.1, 0),
+    //   new CANNON.Vec3(0, 0.412, 0)
+    // );
   }
 });
 
@@ -4392,13 +4405,8 @@ document.addEventListener('keyup', (e) => {
     vel.x = 0;
   }
 });
-const mapOffset = { x: -20, y: 20, z: 0 };
-// const gui = new GUI();
-// const cameraFolder = gui.addFolder('Camera');
-// cameraFolder.add(camera.position, 'y', mapOffset.y, 10);
-// cameraFolder.add(camera.position, 'x', mapOffset.x, 100);
-// cameraFolder.open();
 
+const physicsRenderList: { tile: THREE.Mesh; body: CANNON.Body }[] = [];
 mapData.forEach((tile) => {
   const hasToRender3D = [11, 12, 13, 15, 35, 18, 19, 20, 24, 28, 34].includes(
     tile.imgNo
@@ -4427,13 +4435,29 @@ mapData.forEach((tile) => {
     const tileMesh = new THREE.Mesh(cubeGeometry, tileMaterial);
     tileMesh.position.x = (tile.x + mapOffset.x) * tileSize;
     tileMesh.position.y = (mapOffset.y - tile.y) * tileSize;
-    // tileMesh.position.z = -0.1;
+    tileMesh.position.z = 0;
+
     scene.add(tileMesh);
+    const cubeShape = new CANNON.Box(
+      new CANNON.Vec3(tileSize / 2, tileSize / 2, tileSize / 2)
+    );
+    const cubeBody = new CANNON.Body({
+      mass: 0,
+      shape: cubeShape,
+    });
+    cubeBody.position.set(
+      tileMesh.position.x,
+      tileMesh.position.y,
+      tileMesh.position.z
+    );
+    physicsRenderList.push({ tile: tileMesh, body: cubeBody });
+    world.addBody(cubeBody);
   } else {
     const tileMesh = new THREE.Mesh(tileGeometry, tileMaterial);
     tileMesh.position.x = (tile.x + mapOffset.x) * tileSize;
     tileMesh.position.y = (mapOffset.y - tile.y) * tileSize;
-    tileMesh.position.z = -0.025;
+    tileMesh.position.z = -tileSize / 2;
+    // tileMesh.position.z = 0;
     scene.add(tileMesh);
   }
 });
@@ -4445,10 +4469,6 @@ mapData.forEach((tile) => {
 //   cube.position.z = (tile.position.z + mapOffset.z) * tileSize;
 //   scene.add(cube);
 // });
-marioMesh.position.x = (mapOffset.x + 1) * tileSize;
-marioMesh.position.y = (mapOffset.y - 12) * tileSize;
-marioMesh.position.z = mapOffset.z * tileSize;
-scene.add(marioMesh);
 
 scene.background = new THREE.Color('rgb(87, 141, 249)');
 
@@ -4460,6 +4480,8 @@ direction = 'RIGHT';
 vel.x = velocityAmount;
 
 function animate() {
+  console.log(marioBody.position.y);
+  tick(marioMesh);
   requestAnimationFrame(animate);
   if (state !== 'JUMPING') {
     if (keysPressed['ArrowRight'] === true) {
@@ -4468,13 +4490,21 @@ function animate() {
       state = 'RUNNING';
     }
   }
+  if (state === 'RUNNING') {
+    marioBody.applyImpulse(
+      new CANNON.Vec3(-vel.x, 0, 0),
+      new CANNON.Vec3(0, 0, 0)
+    );
+  }
+  if (state === 'IDLE') {
+    marioBody.applyImpulse(new CANNON.Vec3(0, 0, 0), new CANNON.Vec3(0, 0, 0));
+  }
   // 카메라 자동이동
-  camera.position.x += 0.005;
-  camera.position.z = Math.sin(frameCount / 400);
-  camera.lookAt(new THREE.Vector3(marioMesh.position.x - 0.5, -0.5, 0));
+  // camera.position.x += 0.005;
+  // camera.position.z = Math.sin(frameCount / 400);
+  // camera.lookAt(new THREE.Vector3(marioMesh.position.x - 0.5, -0.5, 0));
 
   frameCount += 1;
-  console.log('🚀 ~ file: client.ts:4479 ~ animate ~ frameCount:', frameCount);
   if (frameCount % 10 === 0) {
     //debug
   }
@@ -4488,55 +4518,55 @@ function animate() {
   // }
 
   if (frameCount % 12 === 0) {
-    if (questionBoxTexture.offset.x < 0.2) {
-      questionBoxTexture.offset.x += 0.1;
+    //애니메이션
+  }
+  if (frameCount % 8 === 0) {
+    marioTexture.offset.y = 0.5;
+    if (marioTexture.offset.x >= 0.75) {
+      marioTexture.offset.x = 0;
     } else {
-      questionBoxTexture.offset.x = 0;
+      marioTexture.offset.x += 0.25;
     }
+    //   if (direction === 'RIGHT') {
+    //     marioTexture.offset.x = 0.75;
+    //     marioTexture.offset.y = 0.75;
+    //   } else if (direction === 'LEFT') {
+    //     marioTexture.offset.x = 0;
+    //     marioTexture.offset.y = 0.25;
+    //   }
+    // } else if (state === 'RUNNING') {
+    //   if (marioTexture.offset.x >= 0.75) {
+    //     marioTexture.offset.x = 0;
+    //   } else {
+    //     marioTexture.offset.x += 0.25;
+    //   }
+    //   if (direction === 'RIGHT') {
+    //     marioTexture.offset.y = 0.5;
+    //   } else {
+    //     marioTexture.offset.y = 0;
+    //   }
+    // } else if (state === 'IDLE') {
+    //   if (direction === 'RIGHT') {
+    //     marioTexture.offset.x = 0;
+    //     marioTexture.offset.y = 0.75;
+    //   } else if (direction === 'LEFT') {
+    //     marioTexture.offset.x = 0.75;
+    //     marioTexture.offset.y = 0.25;
+    //   }
   }
-  if (frameCount % 4 === 0) {
-    if (marioMesh.position.y > 0.4) {
-      if (direction === 'RIGHT') {
-        marioTexture.offset.x = 0.75;
-        marioTexture.offset.y = 0.75;
-      } else if (direction === 'LEFT') {
-        marioTexture.offset.x = 0;
-        marioTexture.offset.y = 0.25;
-      }
-    } else if (state === 'RUNNING') {
-      if (marioTexture.offset.x >= 0.75) {
-        marioTexture.offset.x = 0;
-      } else {
-        marioTexture.offset.x += 0.25;
-      }
-      if (direction === 'RIGHT') {
-        marioTexture.offset.y = 0.5;
-      } else {
-        marioTexture.offset.y = 0;
-      }
-    } else if (state === 'IDLE') {
-      if (direction === 'RIGHT') {
-        marioTexture.offset.x = 0;
-        marioTexture.offset.y = 0.75;
-      } else if (direction === 'LEFT') {
-        marioTexture.offset.x = 0.75;
-        marioTexture.offset.y = 0.25;
-      }
-    }
-  }
-  if (marioMesh.position.y < 0.4) {
-    marioMesh.position.y = 0.4;
-    vel.y = 0;
-    state = 'IDLE';
-  }
+  // if (marioMesh.position.y < 0.4) {
+  //   marioMesh.position.y = 0.4;
+  //   vel.y = 0;
+  //   state = 'IDLE';
+  // }
 
-  if (marioMesh.position.y > jumpLimit || '') {
-    vel.y = vel.y * -1;
-  }
-  marioMesh.position.x += vel.x;
-  marioMesh.position.y += vel.y;
-  // camera.position.x = marioMesh.position.x;
-
+  // if (marioMesh.position.y > jumpLimit || '') {
+  //   vel.y = vel.y * -1;
+  // }
+  // marioMesh.position.x += vel.x;
+  // marioMesh.position.y += vel.y;
+  camera.position.x = marioMesh.position.x;
+  camera.position.y = marioMesh.position.y + 1;
   render();
 }
 
