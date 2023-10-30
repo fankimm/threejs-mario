@@ -4226,7 +4226,7 @@ const mapData = [
 //       }
 //     }
 //   }
-//   console.log('🚀 ~ file: client.ts:4216 ~ tmpMapData:', tmpMapData);
+
 //   // mapCanvas.remove();
 //   comp.forEach((t, idx) => {
 //     if (t?.imageData) {
@@ -4273,12 +4273,11 @@ renderer.setSize(window.innerWidth, window.innerWidth);
 let gameState = '';
 const controls = new OrbitControls(camera, renderer.domElement);
 const jumpLimit = 0.5;
-const jumpAmount = 0.2;
+const jumpAmount = 0.15;
 const tileSize = 1;
 const cubeTile = new THREE.BoxGeometry(tileSize, tileSize, tileSize);
 const planeTile = new THREE.PlaneGeometry(tileSize, tileSize);
 const mapOffset = { x: -20, y: 20, z: 0 };
-
 const marioTexture = new THREE.TextureLoader().load('img/characters.png');
 marioTexture.minFilter = THREE.NearestFilter;
 marioTexture.magFilter = THREE.NearestFilter;
@@ -4299,35 +4298,40 @@ camera.position.x = marioMesh.position.x;
 camera.position.y = 30;
 camera.position.z = 30;
 // const marioMesh = new THREE.Mesh(planeTile, marioMaterial);
+// 마리오 초기화
 const x = -10;
 const y = 10;
-const z = 0;
 
 marioMesh.position.x = x * tileSize;
 marioMesh.position.y = y * tileSize;
-marioMesh.position.z = z * tileSize;
+marioMesh.position.z = 0;
 scene.add(marioMesh);
 const world = new CANNON.World();
 world.gravity.set(0, -9.82, 0);
-const defaultMaterial = new CANNON.Material('default');
+// const defaultMaterial = new CANNON.Material('default');
 
-const defaultContactMaterial = new CANNON.ContactMaterial(
-  defaultMaterial,
-  defaultMaterial,
-  {
-    friction: 0,
-    restitution: 0,
-  }
-);
-world.addContactMaterial(defaultContactMaterial);
-world.defaultContactMaterial = defaultContactMaterial;
+// const defaultContactMaterial = new CANNON.ContactMaterial(
+//   defaultMaterial,
+//   defaultMaterial,
+//   {
+//     friction: 0,
+//     restitution: 0,
+//   }
+// );
+// world.addContactMaterial(defaultContactMaterial);
+// world.defaultContactMaterial = defaultContactMaterial;
 // const marioShape = new CANNON.Sphere(tileSize / 2);
 const marioShape = new CANNON.Box(
-  new CANNON.Vec3(tileSize / 2, tileSize / 2, tileSize / 2)
+  new CANNON.Vec3(tileSize / 2, tileSize / 2, tileSize * 2)
 );
 const marioBody = new CANNON.Body({
   mass: 1,
   shape: marioShape,
+});
+marioBody.angularDamping = 1;
+marioBody.fixedRotation = true;
+marioBody.addEventListener('collide', (e: CANNON.ICollisionEvent) => {
+  state = 'IDLE';
 });
 // marioBody.position.set(-10, 20, 0);
 // marioMesh.position.copy(
@@ -4340,7 +4344,7 @@ const marioBody = new CANNON.Body({
 // marioMesh.position.x = marioBody.position.x;
 // marioMesh.position.y = marioBody.position.y;
 // marioMesh.position.z = marioBody.position.z;
-marioBody.position.x = marioMesh.position.x;
+marioBody.position.x = marioMesh.position.x + tileSize / 2;
 marioBody.position.y = marioMesh.position.y;
 marioBody.position.z = marioMesh.position.z;
 // marioBody.position.copy(new THREE.Vector3(marioMesh.position.x))
@@ -4357,20 +4361,16 @@ const tick = (target: THREE.Mesh) => {
   const deltaTime = elapsedTime - oldElapsedTime;
   oldElapsedTime = elapsedTime;
   world.step(1 / 60, deltaTime, 3);
-  physicsRenderList.forEach((l) => {
-    l.tile.position.copy(
-      new THREE.Vector3(l.body.position.x, l.body.position.y, l.body.position.z)
-    );
-    // l.tile.position.x = l.body.position.x;
-    // l.tile.position.y = l.body.position.y;
-    // l.tile.position.z = l.body.position.z;
-  });
+  // physicsRenderList.forEach((l) => {
+  //   l.tile.position.copy(
+  //     new THREE.Vector3(l.body.position.x, l.body.position.y, l.body.position.z)
+  //   );
+  //   // l.tile.position.x = l.body.position.x;
+  //   // l.tile.position.y = l.body.position.y;
+  //   // l.tile.position.z = l.body.position.z;
+  // });
   target.position.copy(
-    new THREE.Vector3(
-      marioBody.position.x,
-      marioBody.position.y,
-      marioBody.position.z
-    )
+    new THREE.Vector3(marioBody.position.x, marioBody.position.y, 0)
   );
   // target.position.x = marioBody.position.x;
   // target.position.y = marioBody.position.y;
@@ -4379,7 +4379,7 @@ const tick = (target: THREE.Mesh) => {
 
 let state: State = 'IDLE';
 let direction: Direction = 'RIGHT';
-const velocityAmount = 0.1;
+const velocityAmount = 0.12;
 
 const keysPressed: { [key: string]: boolean } = {};
 window.onload = function () {
@@ -4395,24 +4395,23 @@ window.onload = function () {
     });
 };
 document.addEventListener('keydown', (e) => {
-  console.log(keysPressed['ArrowRight']);
   keysPressed[e.key] = true;
   if (e.key === 'ArrowRight') {
     state = 'RUNNING';
     direction = 'RIGHT';
-    vel.x = velocityAmount;
+    // vel.x = velocityAmount;
   } else if (e.key === 'ArrowLeft') {
     state = 'RUNNING';
     direction = 'LEFT';
-    vel.x = -velocityAmount;
+    marioBody.position.x -= 0.1;
+    // vel.x = -velocityAmount;
   } else if (e.code === 'Space') {
     state = 'JUMPING';
-    if (keysPressed['ArrowRight'] === true) {
-      console.log('오른쪽 눌림');
-      vel.x = velocityAmount;
-    } else if (keysPressed['ArrowLeft'] === true) {
-      vel.x = -velocityAmount;
-    }
+    // if (keysPressed['ArrowRight'] === true) {
+    //   vel.x = velocityAmount;
+    // } else if (keysPressed['ArrowLeft'] === true) {
+    //   vel.x = -velocityAmount;
+    // }
 
     vel.y = jumpAmount;
     // marioBody.applyImpulse(
@@ -4426,13 +4425,13 @@ document.addEventListener('keydown', (e) => {
 
 document.addEventListener('keyup', (e) => {
   keysPressed[e.key] = false;
-  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-    state = 'IDLE';
-    vel.x = 0;
-  }
+  // if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+  //   state = 'IDLE';
+  //   vel.x = 0;
+  // }
 });
 
-const physicsRenderList: { tile: THREE.Mesh; body: CANNON.Body }[] = [];
+// const physicsRenderList: { tile: THREE.Mesh; body: CANNON.Body }[] = [];
 mapData.forEach((tile) => {
   const hasToRender3D = [11, 12, 13, 15, 35, 18, 19, 20, 24, 28, 34].includes(
     tile.imgNo
@@ -4469,14 +4468,16 @@ mapData.forEach((tile) => {
     );
     const cubeBody = new CANNON.Body({
       mass: 0,
-      shape: cubeShape,
     });
+    cubeBody.addShape(cubeShape);
+    cubeBody.fixedRotation = true;
     cubeBody.position.set(
       tileMesh.position.x,
+      // tileMesh.position.x + tileSize / 2,
       tileMesh.position.y,
-      tileMesh.position.z
+      0
     );
-    physicsRenderList.push({ tile: tileMesh, body: cubeBody });
+    // physicsRenderList.push({ tile: tileMesh, body: cubeBody });
     world.addBody(cubeBody);
   } else {
     const tileMesh = new THREE.Mesh(tileGeometry, tileMaterial);
@@ -4501,12 +4502,13 @@ scene.background = new THREE.Color('rgb(87, 141, 249)');
 let frameCount = 0;
 
 //마리오 자동 달리기
-state = 'RUNNING';
+// state = 'RUNNING';
 direction = 'RIGHT';
 vel.x = velocityAmount;
 
 function animate() {
   if (gameState !== 'GAMEOVER') {
+    marioBody.position.z = 0;
     if (marioBody.position.y < -0.1) {
       gameState = 'GAMEOVER';
     }
@@ -4524,6 +4526,7 @@ function animate() {
       marioBody.position.y += vel.y;
     }
     marioBody.position.x += velocityAmount;
+    marioBody.position.z = 0;
     // if (state === 'RUNNING') {
     //   marioBody.position.x += vel.x;
     //   // marioBody.position.y += vel.y;
@@ -4599,15 +4602,10 @@ function animate() {
     // }
     // marioMesh.position.x += vel.x;
     // marioMesh.position.y += vel.y;
-    camera.position.x = marioMesh.position.x;
-    console.log(
-      '🚀 ~ file: client.ts:4603 ~ animate ~ marioMesh.position.x:',
-      marioMesh.position.x
-    );
+    camera.position.x = Math.ceil(marioMesh.position.x * 1000) / 1000;
     // camera.position.y = marioMesh.position.y + 1;
     render();
   } else {
-    console.log(stateLabel);
     bgm.pause();
     gamveOverBgm.play();
     stateLabel.style.display = 'block';
