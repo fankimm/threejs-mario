@@ -4374,11 +4374,22 @@ const tick = (target: THREE.Mesh) => {
 
 let state: State = 'IDLE';
 let direction: Direction = 'RIGHT';
-const velocityAmount = 0.0008;
+const velocityAmount = 0.001;
 
 const keysPressed: { [key: string]: boolean } = {};
+window.onload = function () {
+  navigator.mediaDevices
+    .getUserMedia({ audio: true })
+    .then(() => {
+      const AudioContext = window.AudioContext;
+      const audioContext = new AudioContext();
+      bgm.play();
+    })
+    .catch((e) => {
+      console.error(`Audio permissions denied: ${e}`);
+    });
+};
 document.addEventListener('keydown', (e) => {
-  bgm.play();
   keysPressed[e.key] = true;
   if (e.key === 'ArrowRight') {
     state = 'RUNNING';
@@ -4491,18 +4502,19 @@ function animate() {
     }
   }
   if (state === 'RUNNING') {
-    marioBody.applyImpulse(
-      new CANNON.Vec3(-vel.x, 0, 0),
-      new CANNON.Vec3(0, 0, 0)
-    );
+    marioBody.position.x += vel.x;
+    // marioBody.applyImpulse(
+    //   new CANNON.Vec3(-vel.x, 0, 0),
+    //   new CANNON.Vec3(0, 0, 0)
+    // );
   }
   if (state === 'IDLE') {
     marioBody.applyImpulse(new CANNON.Vec3(0, 0, 0), new CANNON.Vec3(0, 0, 0));
   }
   // 카메라 자동이동
-  // camera.position.x += 0.005;
-  // camera.position.z = Math.sin(frameCount / 400);
-  // camera.lookAt(new THREE.Vector3(marioMesh.position.x - 0.5, -0.5, 0));
+  camera.position.x += 0.005;
+  camera.position.z = Math.sin(frameCount / 400);
+  camera.lookAt(new THREE.Vector3(marioMesh.position.x - 0.5, -0.5, 0));
 
   frameCount += 1;
   if (frameCount % 10 === 0) {
