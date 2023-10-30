@@ -4374,7 +4374,7 @@ const tick = (target: THREE.Mesh) => {
 
 let state: State = 'IDLE';
 let direction: Direction = 'RIGHT';
-const velocityAmount = 0.001;
+const velocityAmount = 0.0008;
 
 const keysPressed: { [key: string]: boolean } = {};
 document.addEventListener('keydown', (e) => {
