@@ -16,6 +16,15 @@
         width: 200px;
         height: 200px;
       }
+      #info {
+        display: none;
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        text-align: center;
+        z-index: 100;
+        font-size: 200px;
+      }
     </style>
   </head>
 
@@ -32,6 +41,7 @@
       height="256"
       style="margin: 20px"
     ></canvas> -->
+    <div id="info">GAME OVER</div>
     <canvas id="c1" class="c"></canvas>
 
     <script type="module" src="bundle.js"></script>
