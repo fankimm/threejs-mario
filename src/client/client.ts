@@ -4240,16 +4240,14 @@ type Direction = 'LEFT' | 'RIGHT';
 const scene = new THREE.Scene();
 // 기즈모 헬퍼
 scene.add(new THREE.AxesHelper(5));
-const bgm = new Audio('bgm.mp3');
-const gamveOverBgm = new Audio('gameover.mp3');
+const bgm = new Audio('./sound/bgm.mp3');
+const gamveOverBgm = new Audio('./sound/gameover.mp3');
 
 // const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 10000);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
 
 // 카메라 초기 위치
-camera.position.y = 2;
-camera.position.z = 2;
-camera.lookAt(19, 2, 0);
+
 // camera.position.y = 1;
 // camera.zoom = 0.5;
 
@@ -4275,8 +4273,8 @@ renderer.setSize(window.innerWidth, window.innerWidth);
 let gameState = '';
 const controls = new OrbitControls(camera, renderer.domElement);
 const jumpLimit = 0.5;
-const jumpAmount = 0.01;
-const tileSize = 0.05;
+const jumpAmount = 0.2;
+const tileSize = 1;
 const cubeTile = new THREE.BoxGeometry(tileSize, tileSize, tileSize);
 const planeTile = new THREE.PlaneGeometry(tileSize, tileSize);
 const mapOffset = { x: -20, y: 20, z: 0 };
@@ -4297,6 +4295,9 @@ const marioMaterial = new THREE.MeshBasicMaterial({
 });
 
 const marioMesh = new THREE.Mesh(planeTile, marioMaterial);
+camera.position.x = marioMesh.position.x;
+camera.position.y = 30;
+camera.position.z = 30;
 // const marioMesh = new THREE.Mesh(planeTile, marioMaterial);
 const x = -10;
 const y = 10;
@@ -4307,22 +4308,25 @@ marioMesh.position.y = y * tileSize;
 marioMesh.position.z = z * tileSize;
 scene.add(marioMesh);
 const world = new CANNON.World();
-world.gravity.set(0, -0.982, 0);
+world.gravity.set(0, -9.82, 0);
 const defaultMaterial = new CANNON.Material('default');
 
 const defaultContactMaterial = new CANNON.ContactMaterial(
   defaultMaterial,
   defaultMaterial,
   {
-    friction: 5.51,
-    restitution: 0.05,
+    friction: 0,
+    restitution: 0,
   }
 );
 world.addContactMaterial(defaultContactMaterial);
 world.defaultContactMaterial = defaultContactMaterial;
-const marioShape = new CANNON.Sphere(tileSize / 2);
+// const marioShape = new CANNON.Sphere(tileSize / 2);
+const marioShape = new CANNON.Box(
+  new CANNON.Vec3(tileSize / 2, tileSize / 2, tileSize / 2)
+);
 const marioBody = new CANNON.Body({
-  mass: 2,
+  mass: 1,
   shape: marioShape,
 });
 // marioBody.position.set(-10, 20, 0);
@@ -4375,7 +4379,7 @@ const tick = (target: THREE.Mesh) => {
 
 let state: State = 'IDLE';
 let direction: Direction = 'RIGHT';
-const velocityAmount = 0.005;
+const velocityAmount = 0.05;
 
 const keysPressed: { [key: string]: boolean } = {};
 window.onload = function () {
@@ -4506,6 +4510,7 @@ function animate() {
     if (marioBody.position.y < -0.1) {
       gameState = 'GAMEOVER';
     }
+    camera.lookAt(marioBody.position.x, 0, 0);
     requestAnimationFrame(animate);
     tick(marioMesh);
     if (state !== 'JUMPING') {
@@ -4518,14 +4523,15 @@ function animate() {
     if (state === 'JUMPING') {
       marioBody.position.y += vel.y;
     }
-    if (state === 'RUNNING') {
-      marioBody.position.x += vel.x;
-      // marioBody.position.y += vel.y;
-      // marioBody.applyImpulse(
-      //   new CANNON.Vec3(-vel.x, 0, 0),
-      //   new CANNON.Vec3(0, 0, 0)
-      // );
-    }
+    marioBody.position.x += velocityAmount;
+    // if (state === 'RUNNING') {
+    //   marioBody.position.x += vel.x;
+    //   // marioBody.position.y += vel.y;
+    //   // marioBody.applyImpulse(
+    //   //   new CANNON.Vec3(-vel.x, 0, 0),
+    //   //   new CANNON.Vec3(0, 0, 0)
+    //   // );
+    // }
     //
     // 카메라 자동이동
     // camera.position.x += 0.005;
