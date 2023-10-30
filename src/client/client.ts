@@ -4242,7 +4242,9 @@ const scene = new THREE.Scene();
 scene.add(new THREE.AxesHelper(5));
 const bgm = new Audio('./sound/bgm.mp3');
 const gamveOverBgm = new Audio('./sound/gameover.mp3');
-
+const jumpSound = new Audio('./sound/jump.mp3');
+const clearSound = new Audio('./sound/clear.mp3');
+jumpSound.volume = 0.2;
 // const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 10000);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
 
@@ -4270,10 +4272,14 @@ const canvas = document.getElementById('c1') as HTMLCanvasElement;
 const stateLabel = document.getElementById('info') as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.setSize(window.innerWidth, window.innerWidth);
+console.log(
+  '🚀 ~ file: client.ts:4273 ~ window.innerWidth:',
+  window.innerWidth
+);
 let gameState = '';
 const controls = new OrbitControls(camera, renderer.domElement);
 const jumpLimit = 0.5;
-const jumpAmount = 0.15;
+const jumpAmount = window.innerWidth / 17000;
 const tileSize = 1;
 const cubeTile = new THREE.BoxGeometry(tileSize, tileSize, tileSize);
 const planeTile = new THREE.PlaneGeometry(tileSize, tileSize);
@@ -4298,8 +4304,9 @@ camera.position.x = marioMesh.position.x;
 camera.position.y = 30;
 camera.position.z = 30;
 // const marioMesh = new THREE.Mesh(planeTile, marioMaterial);
-// 마리오 초기화
-const x = -10;
+// 마리오 초기위치;
+// const x = -10;
+const x = -15;
 const y = 10;
 
 marioMesh.position.x = x * tileSize;
@@ -4333,6 +4340,8 @@ marioBody.fixedRotation = true;
 marioBody.addEventListener('collide', (e: CANNON.ICollisionEvent) => {
   state = 'IDLE';
 });
+camera.lookAt(marioBody.position.x, 0, 0);
+
 // marioBody.position.set(-10, 20, 0);
 // marioMesh.position.copy(
 //   new THREE.Vector3(
@@ -4360,7 +4369,7 @@ const tick = (target: THREE.Mesh) => {
   const elapsedTime = clock.getElapsedTime();
   const deltaTime = elapsedTime - oldElapsedTime;
   oldElapsedTime = elapsedTime;
-  world.step(1 / 60, deltaTime, 3);
+  world.step(1 / 60, deltaTime);
   // physicsRenderList.forEach((l) => {
   //   l.tile.position.copy(
   //     new THREE.Vector3(l.body.position.x, l.body.position.y, l.body.position.z)
@@ -4379,7 +4388,7 @@ const tick = (target: THREE.Mesh) => {
 
 let state: State = 'IDLE';
 let direction: Direction = 'RIGHT';
-const velocityAmount = 0.12;
+const velocityAmount = window.innerWidth / 15000;
 
 const keysPressed: { [key: string]: boolean } = {};
 window.onload = function () {
@@ -4403,9 +4412,12 @@ document.addEventListener('keydown', (e) => {
   } else if (e.key === 'ArrowLeft') {
     state = 'RUNNING';
     direction = 'LEFT';
-    marioBody.position.x -= 0.1;
+    marioBody.position.x -= 0.2;
     // vel.x = -velocityAmount;
   } else if (e.code === 'Space') {
+    if (state !== 'JUMPING') {
+      jumpSound.play();
+    }
     state = 'JUMPING';
     // if (keysPressed['ArrowRight'] === true) {
     //   vel.x = velocityAmount;
@@ -4507,13 +4519,25 @@ direction = 'RIGHT';
 vel.x = velocityAmount;
 
 function animate() {
-  if (gameState !== 'GAMEOVER') {
+  console.log(marioBody.position.y);
+  if (!['GAMEOVER', 'CLEAR'].includes(gameState)) {
     marioBody.position.z = 0;
+    if (
+      marioBody.position.x >= 177.5
+      // marioBody.position.x <= 179 &&
+      // marioBody.position.y > 9 &&
+      // marioBody.position.y < 17
+    ) {
+      gameState = 'CLEAR';
+    }
     if (marioBody.position.y < -0.1) {
       gameState = 'GAMEOVER';
     }
-    camera.lookAt(marioBody.position.x, 0, 0);
+    // camera.lookAt(marioBody.position.x, 0, 0);
     requestAnimationFrame(animate);
+    // 마리오 자동이동
+    marioBody.position.x += velocityAmount;
+    marioBody.position.z = 0;
     tick(marioMesh);
     if (state !== 'JUMPING') {
       if (keysPressed['ArrowRight'] === true) {
@@ -4525,8 +4549,7 @@ function animate() {
     if (state === 'JUMPING') {
       marioBody.position.y += vel.y;
     }
-    marioBody.position.x += velocityAmount;
-    marioBody.position.z = 0;
+
     // if (state === 'RUNNING') {
     //   marioBody.position.x += vel.x;
     //   // marioBody.position.y += vel.y;
@@ -4558,11 +4581,16 @@ function animate() {
       //애니메이션
     }
     if (frameCount % 8 === 0) {
-      marioTexture.offset.y = 0.5;
-      if (marioTexture.offset.x >= 0.75) {
-        marioTexture.offset.x = 0;
-      } else {
-        marioTexture.offset.x += 0.25;
+      if (state !== 'JUMPING') {
+        marioTexture.offset.y = 0.5;
+        if (marioTexture.offset.x >= 0.75) {
+          marioTexture.offset.x = 0;
+        } else {
+          marioTexture.offset.x += 0.25;
+        }
+      } else if (state === 'JUMPING') {
+        marioTexture.offset.x = 0.75;
+        marioTexture.offset.y = 0.75;
       }
       //   if (direction === 'RIGHT') {
       //     marioTexture.offset.x = 0.75;
@@ -4605,10 +4633,15 @@ function animate() {
     camera.position.x = Math.ceil(marioMesh.position.x * 1000) / 1000;
     // camera.position.y = marioMesh.position.y + 1;
     render();
-  } else {
+  } else if (gameState === 'GAMEOVER') {
     bgm.pause();
     gamveOverBgm.play();
     stateLabel.style.display = 'block';
+  } else if (gameState === 'CLEAR') {
+    bgm.pause();
+    clearSound.play();
+    stateLabel.style.display = 'block';
+    stateLabel.innerText = 'CONGRATULATIONS';
   }
 }
 
