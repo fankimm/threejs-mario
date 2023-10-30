@@ -4379,7 +4379,7 @@ const tick = (target: THREE.Mesh) => {
 
 let state: State = 'IDLE';
 let direction: Direction = 'RIGHT';
-const velocityAmount = 0.05;
+const velocityAmount = 0.1;
 
 const keysPressed: { [key: string]: boolean } = {};
 window.onload = function () {
@@ -4600,6 +4600,10 @@ function animate() {
     // marioMesh.position.x += vel.x;
     // marioMesh.position.y += vel.y;
     camera.position.x = marioMesh.position.x;
+    console.log(
+      '🚀 ~ file: client.ts:4603 ~ animate ~ marioMesh.position.x:',
+      marioMesh.position.x
+    );
     // camera.position.y = marioMesh.position.y + 1;
     render();
   } else {
